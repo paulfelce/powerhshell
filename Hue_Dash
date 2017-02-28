@@ -1,6 +1,6 @@
 
 #This script listens for my amazon dash button and will toggle the status of my hue lamp
-#dash mac found by looking at the router
+#dash mac found by running script (it outputs mac addresses that have been detected)
 #long user name for hue found by using the rest api tester and pressing the button (see hue getting started guides)
 
 $StartDate = (Get-Date)
