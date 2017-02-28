@@ -1,0 +1,58 @@
+
+#This script listens for my amazon dash button and will toggle the status of my hue lamp
+#dash mac found by looking at the router
+#long user name for hue found by using the rest api tester and pressing the button (see hue getting started guides)
+
+$StartDate = (Get-Date)
+
+#dash button script. Change the $dashButtonMac variable to the address of the dash button.
+
+$dashButtonMac = "ac:63:be:e1:df:6e"
+
+$endpoint = new-object System.Net.IPEndPoint ([system.net.ipaddress]::any, 67)
+$listenHost = new-object System.Net.Sockets.UdpClient
+$listenHost.Client.SetSocketOption([System.Net.Sockets.SocketOptionLevel]::Socket, 
+[System.Net.Sockets.SocketOptionName]::ReuseAddress, $True);
+$bindEndPoint = new-object System.Net.IPEndPoint([system.net.ipaddress]::any, 67)
+$listenHost.client.Bind($bindEndPoint)
+
+$delay = Get-Date
+
+while($true){
+    $payload = $listenHost.Receive([ref] $endpoint)
+    if($payload[0] -eq 1 -and $payload[242] -eq 3 -and ((Get-Date) - $delay).seconds -gt 5)
+          { #filter for DHCP Request messages only. byte 242 checks option 53's value of 3
+        $delay = Get-Date
+        $clientMac = 0,0,0,0,0,0
+        [array]::Copy($payload, 28,$clientMac,0,6)
+        for($i = 0; $i -lt $clientMac.Count; $i++){
+            $clientMac[$i] = "{0:x2}" -f $clientMac[$i]
+        }
+        $mac = $clientMac -join ':'
+        if($mac -eq $dashButtonMac){
+            Write-Output ("Dash Button has been detected : " + $mac)
+  
+
+  
+$a=Invoke-WebRequest -Uri 192.168.0.2/api/F5jJKcuqh5w3O4A2l5pnkCD-Tut0raCtaLivOBeq/lights/1/state -Method PUT -Body '{"on":false, "sat":254, "bri":254,"hue":61312}' 
+$a=Invoke-WebRequest -Uri 192.168.0.2/api/F5jJKcuqh5w3O4A2l5pnkCD-Tut0raCtaLivOBeq/lights/1/ -Method GET |convertfrom-json
+
+if($a.state.on)
+{
+   $a=Invoke-WebRequest -Uri 192.168.0.2/api/F5jJKcuqh5w3O4A2l5pnkCD-Tut0raCtaLivOBeq/lights/1/state -Method PUT -Body '{"on":false}' 
+}
+else
+{
+    $a=Invoke-WebRequest -Uri 192.168.0.2/api/F5jJKcuqh5w3O4A2l5pnkCD-Tut0raCtaLivOBeq/lights/1/state -Method PUT -Body '{"on":true, "sat":254, "bri":254,"hue":61312}' 
+}
+
+
+
+        }
+        else{
+            Write-Output ("Valid DHCP Request message obtained but not from Dash button : " + $mac)
+            # optionaly do something else
+        }
+    }
+    Start-Sleep -Milliseconds 100
+}
